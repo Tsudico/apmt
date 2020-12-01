@@ -60,6 +60,9 @@ function GUIKeepData(commonFunctions)
       coordinates[v] = numberInput("Type the " .. v .. " " .. thing .. " coordinate")
       if (coordinates[v] == nil) then
         self.showWarningMsg("Warning: " .. v .. " must be number")
+        if (v == "f") then
+          self.showWarningMsg("  S = 0, W = 1, N = 2, E = 3")
+        end
         self.showWarningMsg("Restarting data input")
         return true
       end
@@ -79,6 +82,7 @@ function GUIKeepData(commonFunctions)
         if position["f"] ~= nil then
           if position.f > 3 or position.f < 0 then
             self.showWarningMsg("Warning: F must be a number between 0 and 3")
+            self.showWarningMsg("  S = 0, W = 1, N = 2, E = 3")
             errorFlag = true
           end
         end
