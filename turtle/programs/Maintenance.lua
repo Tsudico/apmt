@@ -231,6 +231,9 @@ function Maintenance(miningTurtle, guiCustomMessages)
 
   local function goHome()
     if miningT.getDistance(objects.home.getX(), objects.home.getY(), objects.home.getZ()) > 0 then
+      if objects.position.getY() < objects.home.getY() then
+        miningT.up()
+      end
       gtp.backTo(objects.home.getX(), objects.home.getY(), objects.home.getZ())
     end
   end
