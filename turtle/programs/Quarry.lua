@@ -47,7 +47,7 @@ function Quarry(miningTurtle, guiCustomMessages, master)
   end
 
   local function computeBounds(sizeX, sizeY, facing)
-    if facing == nil 
+    if facing == nil then
       guiMessages.showWarningMsg("No facing for quarry bounds")
       return nil
     end
@@ -95,7 +95,7 @@ function Quarry(miningTurtle, guiCustomMessages, master)
   end
   
     
-  local verifyBounds()
+  local function verifyBounds()
     if specificData.bounds == nil then
       guiMessages.showWarningMsg("Unable to verify quarry boundary")
       return
@@ -104,10 +104,10 @@ function Quarry(miningTurtle, guiCustomMessages, master)
     local z = objects.position.getZ()
     local facing = objects.position.getF()
     -- Check facing and "move" forward one
-    if facing == 0 then z = z +1 else -- South
-    if facing == 1 then x = x -1 else -- West
-    if facing == 2 then z = z -1 else -- North
-    if facing == 3 then x = x +1 end  -- East
+    if facing == 0 then z = z +1 -- South
+    elseif facing == 1 then x = x -1 -- West
+    elseif facing == 2 then z = z -1 -- North
+    elseif facing == 3 then x = x +1 end  -- East
     -- If "move" is outside quarry bounds, reverse facing
     local tries = 0
     while specificData.bounds.minX > x or specificData.bounds.maxX < x
@@ -131,6 +131,7 @@ function Quarry(miningTurtle, guiCustomMessages, master)
         while true do
           os.sleep(60)
         end
+      end
     end
   end
 
