@@ -16,6 +16,7 @@ function Quarry(miningTurtle, guiCustomMessages, master)
     specificLocalData.stepY = 0
     specificLocalData.y = 0
     specificLocalData.x = 0
+    specificLocalData.f = objects.position.getF()
     if master ~= nil then
       specificLocalData.x = master.task.params[1]
       specificLocalData.y = master.task.params[2]
@@ -32,9 +33,105 @@ function Quarry(miningTurtle, guiCustomMessages, master)
         end
       end
     end
+    specificLocalData.bounds = computeBounds(specificLocalData.x, specificLocalData.y, specificLocalData.f)
+    if specificLocalData.bounds == nil then
+      guiMessages.showWarningMsg("Unable to compute quarry bounds")
+    else
+      guiMessages.showInfoMsg("Quarry Bounds Min/Max:")
+      guiMessages.showInfoMsg("  X=" .. specificData.bounds.minX .. "/" .. specificData.bounds.maxX)
+      guiMessages.showInfoMsg("  Z=" .. specificData.bounds.minZ .. "/" .. specificData.bounds.maxZ)
+    end
     specificLocalData.turn = false
     specificLocalData.descend = false
     return specificLocalData
+  end
+
+  local function computeBounds(sizeX, sizeY, facing)
+    if facing == nil 
+      guiMessages.showWarningMsg("No facing for quarry bounds")
+      return nil
+    end
+    local x = objects.position.getX()
+    local z = objects.position.getZ()
+    local boundsCase =
+      commonF.switch {
+      [0] = function(x) -- Facing South +Z, -X
+        return {
+          minX = x - (sizeY - 1),
+          minZ = z,
+          maxX = x,
+          maxZ = z + sizeX
+        }
+      end,
+      [1] = function(x) -- Facing West -X, -Z
+        return {
+          minX = x - sizeX,
+          minZ = z - (sizeY - 1),
+          maxX = x,
+          maxZ = z 
+        }
+      end,
+      [2] = function(x) -- Facing North -Z, +X
+        return {
+          minX = x,
+          minZ = z - sizeX,
+          maxX = x + (sizeY - 1),
+          maxZ = z
+        }
+      end,
+      [3] = function(x) -- Facing East +X, +Z
+        return {
+          minX = x,
+          minZ = z,
+          maxX = x + sizeX,
+          maxZ = z + (sizeY - 1)
+        }
+      end,
+      default = function(x)
+        return nil
+      end
+    }
+    return boundsCase:case(facing)
+  end
+  
+    
+  local verifyBounds()
+    if specificData.bounds == nil then
+      guiMessages.showWarningMsg("Unable to verify quarry boundary")
+      return
+    end
+    local x = objects.position.getX()
+    local z = objects.position.getZ()
+    local facing = objects.position.getF()
+    -- Check facing and "move" forward one
+    if facing == 0 then z = z +1 else -- South
+    if facing == 1 then x = x -1 else -- West
+    if facing == 2 then z = z -1 else -- North
+    if facing == 3 then x = x +1 end  -- East
+    -- If "move" is outside quarry bounds, reverse facing
+    local tries = 0
+    while specificData.bounds.minX > x or specificData.bounds.maxX < x
+    or specificData.bounds.minZ > z or specificData.bounds.maxZ < z do
+      if facing < 2 then facing = facing +2 else facing = facing -2 end
+      guiMessages.showWarningMsg("Wrong facing discovered, correcting")
+      while objects.position.getF() ~= facing do
+        miningT.left()
+      end
+      tries = tries +1
+      if tries > 2 then
+        guiMessages.showErrorMsg("I'm lost, I think I'm outside the quarry bounds")
+        guiMessages.showInfoMsg("Position:")
+        guiMessages.showInfoMsg("  X=" .. objects.position.getX())
+        guiMessages.showInfoMsg("  Y=" .. objects.position.getY())
+        guiMessages.showInfoMsg("  Z=" .. objects.position.getZ())
+        guiMessages.showInfoMsg("")
+        guiMessages.showInfoMsg("Quarry Bounds Min/Max:")
+        guiMessages.showInfoMsg("  X=" .. specificData.bounds.minX .. "/" .. specificData.bounds.maxX)
+        guiMessages.showInfoMsg("  Z=" .. specificData.bounds.minZ .. "/" .. specificData.bounds.maxZ)
+        while true do
+          os.sleep(60)
+        end
+    end
   end
 
   local function addStepX()
@@ -67,6 +164,9 @@ function Quarry(miningTurtle, guiCustomMessages, master)
   local actionsCase =
     commonF.switch {
     [0] = function(x)
+      if specificData.stepX == 0 then
+        verifyBounds()
+      end
       while specificData.stepX < specificData.x - 1 and not objects.execution.getTerminate() do
         miningT.forward()
         addStepX()
