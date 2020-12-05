@@ -93,7 +93,20 @@ function Quarry(miningTurtle, guiCustomMessages, master)
     }
     return boundsCase:case(facing)
   end
-  
+
+  -- Left = true, Right = false
+  local function adjustTurn()
+    local turn = (specificData.stepX % 2 == 1)
+    -- Even sized y numbered quarries flip turn direction based on level
+    -- level math should be changed if quarry level doesn't start at home position
+    local level = math.abs(objects.home.getY() - objects.position.getY())
+    if specificData.y % 2 == 0 and level % 2 == 0 then
+      turn = not turn
+    end
+    guiMessages.showInfoMsg("Old turn direction: " .. specificData.turn)
+    guiMessages.showInfoMsg("New turn direction: " .. turn)
+    specificData.turn = turn
+  end
     
   local function verifyBounds()
     if specificData.bounds == nil then
@@ -104,27 +117,28 @@ function Quarry(miningTurtle, guiCustomMessages, master)
     local z = objects.position.getZ()
     local facing = objects.position.getF()
     -- Check facing and "move" forward one
-    if facing == 0 then z = z +1 -- South
-    elseif facing == 1 then x = x -1 -- West
-    elseif facing == 2 then z = z -1 -- North
-    elseif facing == 3 then x = x +1 end  -- East
+    local function newPos(x, z, facing)
+      local new = {}
+      if facing == 0 then new.z = z +1 -- South
+      elseif facing == 1 then new.x = x -1 -- West
+      elseif facing == 2 then new.z = z -1 -- North
+      elseif facing == 3 then new.x = x +1 end  -- East
+      return new
+    end
+    local new = newPos(x, z, facing)
     -- If "move" is outside quarry bounds, reverse facing
     local tries = 0
-    while specificData.bounds.minX > x or specificData.bounds.maxX < x
-    or specificData.bounds.minZ > z or specificData.bounds.maxZ < z do
-      if facing < 2 then facing = facing +2 else facing = facing -2 end
+    while specificData.bounds.minX > new.x or specificData.bounds.maxX < new.x
+    or specificData.bounds.minZ > new.z or specificData.bounds.maxZ < new.z do
       guiMessages.showWarningMsg("Wrong facing discovered, correcting")
-      while objects.position.getF() ~= facing do
-        miningT.left()
-      end
+      facing = bit.bxor(facing, 2)
+      new = newPos(x, z, facing)
       tries = tries +1
       if tries > 2 then
         guiMessages.showErrorMsg("I'm lost, I think I'm outside the quarry bounds")
-        guiMessages.showInfoMsg("Position:")
-        guiMessages.showInfoMsg("  X=" .. objects.position.getX())
-        guiMessages.showInfoMsg("  Y=" .. objects.position.getY())
-        guiMessages.showInfoMsg("  Z=" .. objects.position.getZ())
-        guiMessages.showInfoMsg("")
+        guiMessages.showInfoMsg("Position: { X=" .. objects.position.getX()
+          ..", Y=" .. objects.position.getY() .. ", Z=" .. objects.position.getZ() .. "}")
+        guiMessages.showInfoMsg("New: { X=" .. new.x .. ", Z=" .. new.z .. "}")
         guiMessages.showInfoMsg("Quarry Bounds Min/Max:")
         guiMessages.showInfoMsg("  X=" .. specificData.bounds.minX .. "/" .. specificData.bounds.maxX)
         guiMessages.showInfoMsg("  Z=" .. specificData.bounds.minZ .. "/" .. specificData.bounds.maxZ)
@@ -132,6 +146,13 @@ function Quarry(miningTurtle, guiCustomMessages, master)
           os.sleep(60)
         end
       end
+    end
+    -- If we have the wrong facing, we likely need to adjust our turn direciton
+    if objects.position.getF() ~= facing then
+      adjustTurn()
+    end
+    while objects.position.getF() ~= facing do
+      miningT.left()
     end
   end
 
@@ -154,6 +175,7 @@ function Quarry(miningTurtle, guiCustomMessages, master)
       objects.escape.setTryToEscape(true)
       objects.execution.setSpecificData(specificDataInput())
       specificData = objects.execution.getSpecificData()
+      miningT.down()
     else
       specificData = objects.execution.getSpecificData()
       objects.escape.setTryToEscape(true)
